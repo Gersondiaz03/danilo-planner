@@ -224,7 +224,7 @@ def implementar_solicitudes_de_mejora(input_str):
         
         llm = ChatOpenAI(temperature=0, model="gpt-4o-mini", api_key= api_gpt)
         response=llm(prompt)
-        
+        print(response)
         return response
 
 class PlanificadorAgent:
