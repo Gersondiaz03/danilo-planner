@@ -304,4 +304,6 @@ class PlanificadorAgent:
 api_hugginface= str(input("Ingrese la api de Hugging Face: "))
 api_gpt= str(input("Ingrese la api de GPT: "))
 agent = PlanificadorAgent()
-agent.chat("crea el repositorio de planificación")
+
+input=str(input("Ingrese la indicación para el programa: "))
+agent.chat(input)
