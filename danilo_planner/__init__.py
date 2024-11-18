@@ -18,34 +18,29 @@ class WindowsModelSelector:
         print("\nIngresa el número de la opción para seleccionar, o 0 para salir.")
 
     def load_model(self, model_name):
-        base_directory = 'danilo_planner\\'
+        base_directory = os.path.dirname(__file__)
         model_file = model_name.lower().replace("-", "_") + ".py"
         file_path = os.path.join(base_directory, model_file)
         
         try:
             if not os.path.isfile(file_path):
-                raise ImportError(f"Could not find {file_path}")
+                raise ImportError(f"No se pudo encontrar {file_path}")
             
             spec = importlib.util.spec_from_file_location(model_name, file_path)
             if spec is None:
-                raise ImportError(f"Could not find {file_path}")
+                raise ImportError(f"No se pudo encontrar {file_path}")
             
             module = importlib.util.module_from_spec(spec)
             spec.loader.exec_module(module)
             
-            if hasattr(module, 'main'):
-                print(f"\nStarting {model_name}...")
-                module.main()
-            else:
-                print(f"\nNo main() function found in {file_path}")
-                input("Press Enter to continue...")
-                
+            print(f"\nIniciando {model_name}...")
+            
         except ImportError as e:
             print(f"\nError: {str(e)}")
-            input("Press Enter to continue...")
+            input("Presiona Enter para continuar...")
         except Exception as e:
-            print(f"\nError loading model: {str(e)}")
-            input("Press Enter to continue...")
+            print(f"\nError al cargar el modelo: {str(e)}")
+            input("Presiona Enter para continuar...")
 
     def run(self):
         while self.running:
@@ -56,7 +51,7 @@ class WindowsModelSelector:
                 choice = int(choice)
                 if choice == 0:
                     self.clear_screen()
-                    print("\nExiting Model Selector...")
+                    print("\nSaliendo...")
                     break
                 elif choice == 1:
                     selected_model = self.options[choice - 1]

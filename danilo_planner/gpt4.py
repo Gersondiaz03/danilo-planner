@@ -301,11 +301,7 @@ class PlanificadorAgent:
             return str(e)
     
 
-def main():
-    agent = PlanificadorAgent()
-    api_hugginface=str(input("Ingrese la api de Hugging Face: "))
-    api_gpt=str(input("Ingrese la api de GPT: "))
-    agent.chat("crea el repositorio de planificación")
-
-if __name__ == "__main__":
-    main()
+api_hugginface= str(input("Ingrese la api de Hugging Face: "))
+api_gpt= str(input("Ingrese la api de GPT: "))
+agent = PlanificadorAgent()
+agent.chat("crea el repositorio de planificación")

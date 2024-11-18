@@ -2,7 +2,7 @@ from setuptools import setup
 
 setup(
     name='danilo-planner',
-    version='0.3',
+    version='0.4',
     packages=['danilo_planner'],
     description='Planificador de proyectos con IA mediante GPT-4',
     author='Danilo Florez',
@@ -14,6 +14,7 @@ setup(
         'langchain_community',
         'langchain-chroma',
         'huggingface_hub',
-        'langchainhub'
+        'langchainhub',
+        'langchain_core'
     ],
 )
