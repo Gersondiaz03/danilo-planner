@@ -2,7 +2,7 @@ from setuptools import setup
 
 setup(
     name='danilo-planner',
-    version='0.7',
+    version='0.8',
     packages=['danilo_planner'],
     description='Planificador de proyectos con IA mediante GPT-4',
     author='Danilo Florez',

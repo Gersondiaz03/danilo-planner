@@ -221,10 +221,11 @@ def implementar_solicitudes_de_mejora(input_str):
         {planificacion_actual}
         Sugiere mejoras a dicha planificación de tal manera que no se altere su estructura y la planificación actual:
         """
+        
         llm = ChatOpenAI(temperature=0, model="gpt-4o-mini", api_key= api_gpt)
-
-        return llm(prompt)
-
+        response=llm(prompt)
+        
+        return response
 
 class PlanificadorAgent:
     def __init__(self):
