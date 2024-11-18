@@ -1,0 +1,7 @@
+!pip install chromadb -q
+!pip install langchain -q
+!pip install langchain_community -q
+!pip install langchain-chroma -q
+!pip install --upgrade --quiet huggingface_hub -q
+!pip install langchainhub -q
+pip install -U langchain-openai -q
