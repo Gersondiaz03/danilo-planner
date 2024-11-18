@@ -2,21 +2,13 @@ from setuptools import setup
 
 setup(
     name='danilo-planner',
-    version='0.6',
+    version='0.7',
     packages=['danilo_planner'],
     description='Planificador de proyectos con IA mediante GPT-4',
     author='Danilo Florez',
     author_email='gersondiaz030998@gmail.com',
     url='',
     install_requires=[
-        'langchain',
-        'chromadb',
-        'langchain_community',
-        'langchain-chroma',
-        'huggingface_hub',
-        'langchainhub',
-        'langchain_core',
-        'openai',
         'aiohappyeyeballs==2.4.3',
         'aiohttp==3.10.10',
         'aiosignal==1.3.1',
