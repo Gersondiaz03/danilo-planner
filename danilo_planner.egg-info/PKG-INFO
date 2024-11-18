@@ -1,6 +1,6 @@
 Metadata-Version: 2.1
 Name: danilo-planner
-Version: 0.3
+Version: 0.4
 Summary: Planificador de proyectos con IA mediante GPT-4
 Home-page: 
 Author: Danilo Florez
@@ -11,3 +11,4 @@ Requires-Dist: langchain_community
 Requires-Dist: langchain-chroma
 Requires-Dist: huggingface_hub
 Requires-Dist: langchainhub
+Requires-Dist: langchain_core
