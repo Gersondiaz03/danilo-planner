@@ -2,9 +2,9 @@ from setuptools import setup
 
 setup(
     name='danilo-planner',
-    version='0.1',
+    version='0.2',
     packages=['danilo_planner'],
-    description='Planificador de tareas con IA implementando diferentes modelos',
+    description='Planificador de proyectos con IA mediante GPT-4',
     author='Danilo Florez',
     author_email='gersondiaz030998@gmail.com',
     url='',

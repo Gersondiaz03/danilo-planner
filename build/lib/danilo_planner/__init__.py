@@ -18,7 +18,7 @@ class WindowsModelSelector:
         print("\nIngresa el número de la opción para seleccionar, o 0 para salir.")
 
     def load_model(self, model_name):
-        base_directory = 'danilo_planner'
+        base_directory = './danilo_planner'
         model_file = model_name.lower().replace("-", "_") + ".py"
         file_path = os.path.join(base_directory, model_file)
         
