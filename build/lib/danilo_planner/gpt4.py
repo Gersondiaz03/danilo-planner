@@ -180,8 +180,13 @@ def actualizar_repositorio(input_str):
     y lo demás déjalo igual en código PDDL y de forma completa desde su inicio hasta el final.
     """
     llm = ChatOpenAI(temperature=0, model="gpt-4o-mini", api_key= api_gpt)
-
-    result =llm(prompt_template)
+    multi_input_prompt = PromptTemplate(
+                input_variables=["planificacion_actual", "input_str"], 
+                template=prompt_template
+            )
+    llm_chain = LLMChain(prompt=multi_input_prompt, llm=llm)
+    
+    result = llm_chain.run({"planificacion_actual": planificacion_actual, "input_str": input_str})
     pattern = re.compile(r'\(define\s+(.*?)\n\)', re.DOTALL)
     match = pattern.search(result)
     codigo_pddl = match.group(0).strip() if match else result
@@ -203,7 +208,7 @@ def actualizar_repositorio(input_str):
 def implementar_solicitudes_de_mejora(input_str):
         """
         parametros: texto con la indicación de implementar las solicitudes de mejora
-        procesamiento: se implementan las solicitudes de mejora en la planificación
+        procesamiento: desde el rol de experto vas a sugerir mejoras a dicha planificación de tal manera que no se altere su estructura y la planificación
         retorno: mensaje de confirmación de la implementación de las solicitudes
         """
         persist_directory = os.path.normpath("danilo_planner\\ChromaDB")
@@ -215,17 +220,22 @@ def implementar_solicitudes_de_mejora(input_str):
         
         docs = Chroma_DB.get_relevant_documents("planificación")
         planificacion_actual = "\n\n".join(str(page.page_content) for page in docs)
-        
-        prompt = f"""
+        prompt_template = f"""
         La planificación actual es la siguiente:
         {planificacion_actual}
-        Sugiere mejoras a dicha planificación de tal manera que no se altere su estructura y la planificación actual:
+        La indicación es la siguiente:
+        {input_str}
+        Sugiere mejoras a dicha planificación de tal manera que no se altere su estructura y la planificación actual
         """
-        
+        multi_input_prompt = PromptTemplate(
+                input_variables=["planificacion_actual", "input_str"], 
+                template=prompt_template
+            )
         llm = ChatOpenAI(temperature=0, model="gpt-4o-mini", api_key= api_gpt)
-        response=llm(prompt)
-        print(response)
-        return response
+        llm_chain = LLMChain(prompt=multi_input_prompt, llm=llm)
+        result = llm_chain.run({"planificacion_actual": planificacion_actual, "input_str": input_str})
+        return result
+
 
 class PlanificadorAgent:
     def __init__(self):
@@ -272,7 +282,7 @@ class PlanificadorAgent:
             Tool(
                 name='implementar_solicitudes_de_mejora',
                 func=implementar_solicitudes_de_mejora,
-                description="se implementan las solicitudes de mejora en la planificación"
+                description="desde el rol de experto vas a sugerir mejoras a dicha planificación de tal manera que no se altere su estructura y la planificación"
             )
             ]
             
@@ -302,9 +312,9 @@ class PlanificadorAgent:
             return str(e)
     
 
+
 api_hugginface= str(input("Ingrese la api de Hugging Face: "))
 api_gpt= str(input("Ingrese la api de GPT: "))
 agent = PlanificadorAgent()
-
-input=str(input("Ingrese la indicación para el programa: "))
+input=str(input("Ingrese la indicación o exit para salir: "))
 agent.chat(input)
