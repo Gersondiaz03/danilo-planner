@@ -13,10 +13,12 @@ from langchain.agents import load_tools
 from langchain.agents import initialize_agent 
 from langchain.agents import AgentType
 from langchain_community.embeddings import HuggingFaceInferenceAPIEmbeddings
-from langchain_openai import ChatOpenAI
+from langchain.chat_models import ChatOpenAI
 from langchain.memory import ConversationBufferMemory
 from langchain_core.prompts import ChatPromptTemplate, MessagesPlaceholder
 
+api_hugginface=""
+api_gpt=""
 
 @tool
 def leer_planificacion(texto_indicacion_leer_planificador):
@@ -37,7 +39,8 @@ def crear_planificador(especificaciones):
         retorno: mensaje de confirmación de la creación del planificador y el contenido retornado
     """
     persist_directory_plan = os.path.normpath("danilo_planner\\PlanificacionL.txt")
-    llm = ChatOpenAI(temperature=0, model="gpt-4o-mini", api_key="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")
+    agent = PlanificadorAgent()
+    llm = ChatOpenAI(temperature=0, model="gpt-4o-mini", api_key= api_gpt)
     
     if os.path.exists(persist_directory_plan) and os.path.getsize(persist_directory_plan) > 0:
         with open(persist_directory_plan, 'r', encoding='utf-8') as archivo:
@@ -77,16 +80,158 @@ def crear_planificador(especificaciones):
         except Exception as e:
             return f"Error al crear el planificador: {e}"
     
+@tool        
+def crear_repositorio(input_str):
+    """
+        parametros: texto con las indicación de crear el repositorio 
+        procesamiento: se crea el repositorio de planificación si no existe
+        retorno: mensaje de confirmación de la creación del repositorio
+    """
+    persist_directory = "danilo_planner\\ChromaDB"
+    agent = PlanificadorAgent()
+    Chroma_DB = Chroma(persist_directory=persist_directory, embedding_function=agent.embeddings).as_retriever()
+    query = "planificación"
+    docs = Chroma_DB.get_relevant_documents(query)
+    
+    if docs:
+        return "El repositorio existe"
+        
+    documents = leer_planificacion("leer planificación")
+    text_splitter = RecursiveCharacterTextSplitter(chunk_size=1000, chunk_overlap=100)
+    docs = text_splitter.split_documents(documents)
+    content = "\n\n".join(str(page.page_content) for page in docs)
+    texts = text_splitter.split_text(content)
+    
+    Chroma_DB = Chroma.from_texts(texts, agent.embeddings, persist_directory=persist_directory)
+    Chroma_DB.persist()
+    return "El repositorio ha sido creado con la planificación existente."
+
+@tool
+def consultar_repositorio(input_str):
+    """
+        parametros: texto con la indicación de consultar el repositorio
+        procesamiento: se consulta el repositorio de planificación
+        retorno: mensaje de la consulta realizada
+    """
+    persist_directory = os.path.normpath("danilo_planner\\ChromaDB")
+    agent = PlanificadorAgent()
+    Chroma_DB = Chroma(
+        persist_directory=persist_directory, 
+        embedding_function=agent.embeddings
+    ).as_retriever(search_kwargs=dict(k=1))
+    
+    docs = Chroma_DB.get_relevant_documents(input_str)
+    context = "\n\n".join(str(page.page_content) for page in docs)
+    return f"La planificación del repositorio es lo siguiente:\n{context}\n\n La consulta es la siguiente:\n{input_str}\n\n La respuesta es:\n"
+
+@tool
+def extraer_solicitudes_usuario(input_str):
+    """
+        parametros: texto con la indicación de extraer las solicitudes del usuario
+        procesamiento: se extraen las solicitudes específicas del siguiente texto de manera concreta y no extensa
+        retorno: mensaje de confirmación de la extracción de las solicitudes
+    """
+    return f"Analiza y extrae las solicitudes específicas del siguiente texto de manera concreta y no extensa:\n\n{input_str}\n\nSolicitudes: "
+
+@tool
+def comparar_solicitudes(input_str):
+    """
+        parametros: texto con la indicación de comparar las solicitudes
+        procesamiento: se comparan las solicitudes de mejora con la planificación actual
+        retorno: mensaje de confirmación de la comparación de las solicitudes       
+    """
+    persist_directory = os.path.normpath("danilo_planner\\ChromaDB")
+    agent = PlanificadorAgent()
+    Chroma_DB = Chroma(
+        persist_directory=persist_directory, 
+        embedding_function=agent.embeddings
+    ).as_retriever(search_kwargs=dict(k=1))
+    
+    docs = Chroma_DB.get_relevant_documents("Devuelve todo el código PDDL del problema de innovación regional en Norte de Santander")
+    planificacion_actual = "\n\n".join(str(page.page_content) for page in docs)
+    return f"Con la planificación: {planificacion_actual} y las nuevas solicitudes:\n {input_str} devuelve si hay diferencias a implementar: "
+
+@tool
+def actualizar_repositorio(input_str):
+    """
+        parametros: texto con la indicación de actualizar el repositorio
+        procesamiento: se actualiza el repositorio de planificación
+        salida: mensaje de confirmación de la actualización del repositorio
+    """
+    persist_directory = os.path.normpath("danilo_planner\\ChromaDB")
+    agent = PlanificadorAgent()
+    Chroma_DB = Chroma(
+        persist_directory=persist_directory, 
+        embedding_function=agent.embeddings
+    ).as_retriever(search_kwargs=dict(k=1))
+    
+    docs = Chroma_DB.get_relevant_documents("planificación")
+    planificacion_actual = "\n\n".join(str(page.page_content) for page in docs)
+    
+    prompt_template = f"""
+    Al siguiente documento de planificación en PDDL:
+
+        {planificacion_actual}
+
+    edita los siguientes cambios en la parte correspondiente:
+
+        {input_str}
+
+    y lo demás déjalo igual en código PDDL y de forma completa desde su inicio hasta el final.
+    """
+    llm = ChatOpenAI(temperature=0, model="gpt-4o-mini", api_key= api_gpt)
+
+    result =llm(prompt_template)
+    pattern = re.compile(r'\(define\s+(.*?)\n\)', re.DOTALL)
+    match = pattern.search(result)
+    codigo_pddl = match.group(0).strip() if match else result
+    
+    text_splitter = RecursiveCharacterTextSplitter(chunk_size=1000, chunk_overlap=100)
+    texts = text_splitter.split_text(codigo_pddl)
+    
+    Chroma_DB = Chroma(persist_directory=persist_directory, embedding_function=agent.embeddings)
+    ids_to_delete = Chroma_DB.get()["ids"]
+    for id in ids_to_delete:
+        Chroma_DB.delete([id])
+        
+    Chroma_DB = Chroma.from_texts(texts, agent.embeddings, persist_directory=persist_directory)
+    Chroma_DB.persist()
+    
+    return "La planificación ha sido actualizada."
+
+@tool
+def implementar_solicitudes_de_mejora(input_str):
+        """
+        parametros: texto con la indicación de implementar las solicitudes de mejora
+        procesamiento: se implementan las solicitudes de mejora en la planificación
+        retorno: mensaje de confirmación de la implementación de las solicitudes
+        """
+        persist_directory = os.path.normpath("danilo_planner\\ChromaDB")
+        agent = PlanificadorAgent()
+        Chroma_DB = Chroma(
+            persist_directory=persist_directory, 
+            embedding_function=agent.embeddings
+        ).as_retriever(search_kwargs=dict(k=1))
+        
+        docs = Chroma_DB.get_relevant_documents("planificación")
+        planificacion_actual = "\n\n".join(str(page.page_content) for page in docs)
+        
+        prompt = f"""
+        La planificación actual es la siguiente:
+        {planificacion_actual}
+        Sugiere mejoras a dicha planificación de tal manera que no se altere su estructura y la planificación actual:
+        """
+        llm = ChatOpenAI(temperature=0, model="gpt-4o-mini", api_key= api_gpt)
+
+        return llm(prompt)
+
 
 class PlanificadorAgent:
     def __init__(self):
-        self.token = None
         self.embeddings = HuggingFaceInferenceAPIEmbeddings(
-            api_key=self.token, model_name="sentence-transformers/all-MiniLM-l6-v2"
+            api_key=api_hugginface, model_name="sentence-transformers/all-MiniLM-l6-v2"
         )
 
-        self.persist_directory = os.path.normpath("danilo_planner\\ChromaDB")
-        self.persist_directory_plan = os.path.normpath("danilo_planner\\PlanificacionL.txt")
         self.tools =[
             Tool(
                 name='crear_planificador',
@@ -97,7 +242,38 @@ class PlanificadorAgent:
                 name='leer_planificacion',
                 func=leer_planificacion,
                 description="se lee la planificación del planificador dado un texto con la indicación"
-            )]
+            ),
+            Tool(
+                name='crear_repositorio',
+                func=crear_repositorio,
+                description="se crea el repositorio de planificación si no existe"
+            ),
+            Tool(
+                name='consultar_repositorio',
+                func=consultar_repositorio,
+                description="se consulta el repositorio de planificación"
+            ),
+            Tool(
+                name='extraer_solicitudes_usuario',
+                func=extraer_solicitudes_usuario,
+                description="Analiza y extrae las solicitudes específicas del siguiente texto de manera concreta y no extensa"
+            ),
+            Tool(
+                name='comparar_solicitudes',
+                func=comparar_solicitudes,
+                description="se comparan las solicitudes de mejora con la planificación actual"
+            ),
+            Tool(
+                name='actualizar_repositorio',
+                func=actualizar_repositorio,
+                description="se actualiza el repositorio de planificación"
+            ),
+            Tool(
+                name='implementar_solicitudes_de_mejora',
+                func=implementar_solicitudes_de_mejora,
+                description="se implementan las solicitudes de mejora en la planificación"
+            )
+            ]
             
         self.memory = ConversationBufferMemory()
         self.prompt = ChatPromptTemplate.from_messages([
@@ -108,7 +284,7 @@ class PlanificadorAgent:
         
         self.agent = initialize_agent(
             tools=self.tools,
-            llm=ChatOpenAI(temperature=0, model="gpt-4o-mini",api_key=token),
+            llm=ChatOpenAI(temperature=0, model="gpt-4o-mini",api_key=api_gpt),
             prompt=self.prompt,
             memory=self.memory,
             agent=AgentType.ZERO_SHOT_REACT_DESCRIPTION,
@@ -119,26 +295,17 @@ class PlanificadorAgent:
     
     def chat(self, input):
         try:
-            response = self.agent(input)
+            response = self.agent.invoke({'input': input})
             return response
         except Exception as e:
             return str(e)
     
-    @property
-    def token(self):
-        """Getter para _token"""
-        return self.token
 
-    @token.setter
-    def token(self, value):
-        """Setter para _token"""
-        self.token = value
-    
 def main():
-#"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"
     agent = PlanificadorAgent()
-
-    agent.chat("crea la planificación de un proyecto de innovación en el sector carbón del departamento norte de Santander de forma no extensa")
+    api_hugginface=str(input("Ingrese la api de Hugging Face: "))
+    api_gpt=str(input("Ingrese la api de GPT: "))
+    agent.chat("crea el repositorio de planificación")
 
 if __name__ == "__main__":
     main()

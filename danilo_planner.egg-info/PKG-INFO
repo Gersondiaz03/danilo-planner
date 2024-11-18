@@ -1,7 +1,7 @@
 Metadata-Version: 2.1
 Name: danilo-planner
-Version: 0.1
-Summary: Planificador de tareas con IA implementando diferentes modelos
+Version: 0.2
+Summary: Planificador de proyectos con IA mediante GPT-4
 Home-page: 
 Author: Danilo Florez
 Author-email: gersondiaz030998@gmail.com
